@@ -1,27 +1,26 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const cors = require("cors"); // <--- 1. IMPORT THIS
 const connectDB = require("./config/db");
 
 // Import Routes
 const authRoutes = require("./routes/auth");
 const patientRoutes = require("./routes/patient");
 
-// Import Models (optional to keep here, but good for testing)
+// Import Models
 const User = require("./models/User");
 const Appointment = require("./models/Appointment");
 
-// 1. Load env vars
 dotenv.config();
-
-// 2. Connect to Database
 connectDB();
 
 const app = express();
 
-// 3. Middleware to accept JSON data
+// --- MIDDLEWARE ---
 app.use(express.json());
+app.use(cors()); // <--- 2. USE THIS (Allows all connections)
 
-// 4. Register Routes
+// Register Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/patient", patientRoutes);
 
