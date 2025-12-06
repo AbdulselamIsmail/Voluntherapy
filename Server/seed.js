@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const bcrypt = require("bcryptjs"); // <--- 1. Import bcryptjs
 const User = require("./models/User");
 const Appointment = require("./models/Appointment");
 const connectDB = require("./config/db");
@@ -13,14 +14,20 @@ const importData = async () => {
     await Appointment.deleteMany();
     await User.deleteMany();
 
+    console.log("🔒 Generating Password Hash...");
+
+    // --- 2. Generate the hash ONCE for password "StrongPassword123!" ---
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash("StrongPassword123!", salt);
+
     console.log("🌱 Creating Users...");
 
-    // --- 1. Create 3 Doctors ---
+    // --- 3. Create 3 Doctors (Use the hashed variable) ---
     const doctors = await User.create([
       {
         name: "Dr. Gregory House",
         email: "house@hospital.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "doctor",
         sex: "male",
         profilePicture: "https://i.pravatar.cc/150?img=11",
@@ -28,7 +35,7 @@ const importData = async () => {
       {
         name: "Dr. Lisa Cuddy",
         email: "cuddy@hospital.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "doctor",
         sex: "female",
         profilePicture: "https://i.pravatar.cc/150?img=5",
@@ -36,19 +43,19 @@ const importData = async () => {
       {
         name: "Dr. James Wilson",
         email: "wilson@hospital.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "doctor",
         sex: "male",
         profilePicture: "https://i.pravatar.cc/150?img=8",
       },
     ]);
 
-    // --- 2. Create 3 Patients ---
+    // --- 4. Create 3 Patients (Use the hashed variable) ---
     const patients = await User.create([
       {
         name: "Marty McFly",
         email: "marty@future.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "patient",
         sex: "male",
         age: 17,
@@ -56,7 +63,7 @@ const importData = async () => {
       {
         name: "Sarah Connor",
         email: "sarah@skynet.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "patient",
         sex: "female",
         age: 29,
@@ -64,7 +71,7 @@ const importData = async () => {
       {
         name: "Tony Stark",
         email: "tony@avengers.com",
-        password: "123",
+        password: hashedPassword, // <--- Using the hash
         role: "patient",
         sex: "male",
         age: 45,
@@ -83,14 +90,6 @@ const importData = async () => {
       d.setHours(hour, 0, 0, 0);
       return d;
     };
-
-    // --- 3. Loop through EACH doctor and create 5 slots ---
-    // Pattern:
-    // Slot 1: Today at 9 AM
-    // Slot 2: Today at 2 PM
-    // Slot 3: Tomorrow at 10 AM
-    // Slot 4: Tomorrow at 4 PM
-    // Slot 5: Day After Tomorrow at 11 AM
 
     const timeOffsets = [
       { days: 0, hour: 9 }, // Today Morning
@@ -118,7 +117,7 @@ const importData = async () => {
     console.log("🧪 TEST DATA INFO:");
     console.log(`Doctors: ${doctors.map((d) => d.name).join(", ")}`);
     console.log(`Patients: ${patients.map((p) => p.name).join(", ")}`);
-    console.log(`Dates covered: Today, Tomorrow, Day After`);
+    console.log(`Password for all: StrongPassword123!`);
     console.log("-----------------------------------------");
 
     process.exit();

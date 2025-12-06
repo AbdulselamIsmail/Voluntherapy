@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 // Import Routes
 const authRoutes = require("./routes/auth");
 const patientRoutes = require("./routes/patient");
+const doctorRoutes = require("./routes/doctor");
 
 // Import Models
 const User = require("./models/User");
@@ -23,6 +24,7 @@ app.use(cors()); // <--- 2. USE THIS (Allows all connections)
 // Register Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/patient", patientRoutes);
+app.use("/api/doctor", doctorRoutes);
 
 // Test Route
 app.get("/test-models", async (req, res) => {

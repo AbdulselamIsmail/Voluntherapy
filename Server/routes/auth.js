@@ -1,26 +1,42 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User"); // Ensure you have models/User.js
+const bcrypt = require("bcryptjs"); // <--- FIX 1: Added missing import
+const User = require("../models/User");
 
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
-    // 1. UPDATE THIS LINE: Add sex, age, profilePicture to the extraction
     const { name, email, password, role, sex, age, profilePicture } = req.body;
 
+    // --- 1. SECURITY CHECK: Validate Password Strength ---
+    // Regex: At least 8 chars, 1 letter, 1 number, 1 symbol
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        msg: "Password is too weak. It must be at least 8 characters long and include 1 letter, 1 number, and 1 symbol.",
+      });
+    }
+
+    // --- 2. Check if user exists ---
     let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ msg: "User already exists" });
     }
 
-    // 2. UPDATE THIS BLOCK: Pass the new fields to the new user
+    // --- 3. Hash Password ---
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // --- 4. Create User ---
     user = new User({
       name,
       email,
-      password,
+      password: hashedPassword, // Store the hash
       role,
-      sex, // <--- New
-      age, // <--- New
-      profilePicture, // <--- New
+      sex,
+      age,
+      profilePicture,
     });
 
     await user.save();
@@ -31,6 +47,29 @@ router.post("/register", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server Error");
+  }
+});
+
+// LOGIN
+router.post("/login", async (req, res) => {
+  try {
+    // 1. Find user by email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return res.status(404).json("User not found!");
+
+    // 2. Compare entered password with stored Hash
+    const validPassword = await bcrypt.compare(
+      req.body.password,
+      user.password
+    );
+
+    if (!validPassword) return res.status(400).json("Wrong password!");
+
+    // 3. Send back user data (excluding the hash)
+    const { password, ...others } = user._doc;
+    res.status(200).json(others);
+  } catch (err) {
+    res.status(500).json(err);
   }
 });
 
