@@ -69,8 +69,11 @@ const BookAppointment = () => {
   useEffect(() => {
     const fetchSlots = async () => {
       try {
-        // 1. Get Token
+        // 1. Get Token and Base URL
         const token = localStorage.getItem("token");
+        const BASE_API_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:5000"; // FIX
+
         if (!token) {
           toast.error("Randevu almak için giriş yapmalısınız.");
           navigate("/login/client");
@@ -78,7 +81,8 @@ const BookAppointment = () => {
         }
 
         // 2. Fetch with Headers
-        const res = await fetch("/api/patient/available-slots", {
+        const res = await fetch(`${BASE_API_URL}/api/patient/available-slots`, {
+          // 👈 FIX: ABSOLUTE URL
           headers: {
             "Content-Type": "application/json",
             token: token, // <--- FIX: Send token manually
@@ -143,13 +147,17 @@ const BookAppointment = () => {
 
     try {
       const token = localStorage.getItem("token");
+      const BASE_API_URL =
+        import.meta.env.VITE_API_URL || "http://localhost:5000"; // FIX
+
       if (!token) {
         navigate("/login/client");
         return;
       }
 
       // Send Request with Token
-      const res = await fetch("/api/patient/book", {
+      const res = await fetch(`${BASE_API_URL}/api/patient/book`, {
+        // 👈 FIX: ABSOLUTE URL
         method: "POST",
         headers: {
           "Content-Type": "application/json",

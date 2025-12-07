@@ -70,39 +70,43 @@ const ClientDashboard = () => {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
 
-  // --- 1. FETCH REAL DATA FROM API ---
+  // --- 1. FETCH REAL DATA FROM API (CORRECTED) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // 1. Get the token from LocalStorage
-        // IMPORTANT: Check your Login page to see if you saved it as "token" or "authToken"
+        // 1. Get the token
         const token = localStorage.getItem("token");
 
         if (!token) {
           toast.error("Oturum bulunamadı. Lütfen giriş yapın.");
           setLoading(false);
+          // window.location.href = "/login"; // Use if navigation is critical
           return;
         }
 
-        // 2. Prepare Headers
-        // Your middleware checks req.header("token"), so we MUST use that key.
+        // 2. Determine Base URL (THE FIX)
+        const BASE_API_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+        // 3. Prepare Headers
         const headers = {
           "Content-Type": "application/json",
-          token: token, // <--- THIS IS THE FIX
+          token: token, // Authentication token
         };
 
-        // 3. Send Request with Headers
+        // 4. Send Request with ABSOLUTE URLs
         const [userRes, appointmentsRes] = await Promise.all([
-          fetch("/api/patient/me", { headers }),
-          fetch("/api/patient/appointments", { headers }),
+          fetch(`${BASE_API_URL}/api/patient/me`, { headers }), // 👈 FIX
+          fetch(`${BASE_API_URL}/api/patient/appointments`, { headers }), // 👈 FIX
         ]);
 
-        // 4. Handle 401 specifically (Token expired or invalid)
+        // 5. Handle 401 specifically (Token expired or invalid)
         if (userRes.status === 401 || appointmentsRes.status === 401) {
-          // Clear invalid token so user isn't stuck
           localStorage.removeItem("token");
+          // NOTE: In production, redirect the user here.
+          // window.location.href = "/login";
           throw new Error("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
         }
 
@@ -138,7 +142,9 @@ const ClientDashboard = () => {
 
     try {
       // TODO: Call your real Cancel API here
-      // await fetch(`/api/appointments/${selectedAppointment.id}/cancel`, { method: 'POST' });
+      // You would need to use the absolute URL here too!
+      // const BASE_API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      // await fetch(`${BASE_API_URL}/api/appointments/${selectedAppointment.id}/cancel`, { method: 'POST' });
 
       // Optimistic UI update
       setAppointments((prev) =>
@@ -167,7 +173,6 @@ const ClientDashboard = () => {
     setVideoLobbyOpen(false);
 
     // --- 2. NAVIGATE TO REAL DB LINK ---
-    // Opens the link in a new tab (if external like Zoom/Meet) or same tab based on preference
     window.open(selectedAppointment.meetingLink, "_blank");
   };
 

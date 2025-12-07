@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// NOTE: api is not imported, but its functionality is included below via fetch
 
 // Define Types for our Data
 interface Therapist {
@@ -61,26 +62,33 @@ const TherapistDashboard = () => {
         // 1. Get Token
         const token = localStorage.getItem("token");
         if (!token) {
-          // Redirect to login if needed
           console.error("No token found");
+          // Navigate to login if needed
           return;
         }
 
+        // 2. Define Headers (Authentication)
         const headers = {
           "Content-Type": "application/json",
-          token: token, // <--- The Fix: Sending the token manually
+          token: token,
         };
 
-        // 2. Fetch Doctor Profile & Slots
-        // We use our new /api/doctor/me route instead of /auth/user
+        // 3. Determine Base URL (The Fix for Deployment)
+        // This relies on VITE_API_URL being set in Render
+        const BASE_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+        // 4. Fetch Doctor Profile & Slots
+        // We prepend the absolute BASE_URL to the relative paths
         const [userRes, slotsRes] = await Promise.all([
-          fetch("/api/doctor/me", { headers }),
-          fetch("/api/doctor/my-slots", { headers }),
+          fetch(`${BASE_URL}/api/doctor/me`, { headers }),
+          fetch(`${BASE_URL}/api/doctor/my-slots`, { headers }),
         ]);
 
         if (userRes.status === 401 || slotsRes.status === 401) {
           localStorage.removeItem("token");
-          window.location.href = "/login"; // Force logout
+          // window.location.href = "/login"; // Use navigate if possible, or force reload
+          window.location.reload();
           return;
         }
 
