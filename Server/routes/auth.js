@@ -65,6 +65,12 @@ router.post("/login", async (req, res) => {
 
     // --- 2. GENERATE TOKEN ---
     // We put the User ID and Role inside the token.
+
+    if (!process.env.JWT_SECRET) {
+      console.error("FATAL ERROR: JWT_SECRET is not defined.");
+      return res.status(500).json({ msg: "Sunucu yapılandırma hatası." });
+    }
+
     const token = jwt.sign(
       { id: user._id, role: user.role }, // Payload (Data inside token)
       process.env.JWT_SECRET, // Secret Key from .env
