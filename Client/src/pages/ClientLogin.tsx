@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api"; // <--- 1. IMPORT THIS
 
 const ClientLogin = () => {
   const navigate = useNavigate();
@@ -20,39 +21,27 @@ const ClientLogin = () => {
     setIsLoading(true);
 
     try {
-      // 1. Send Login Request using fetch
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // 2. Use 'api.post' instead of 'fetch'
+      // This automatically uses the correct Render Backend URL
+      const response = await api.post("/auth/login", { email, password });
 
-      const data = await res.json();
+      // 3. Get data from response (Axios puts body in .data)
+      const data = response.data;
 
-      if (!res.ok) {
-        throw new Error(data.msg || "Giriş başarısız oldu.");
-      }
-
-      // 2. Save Token AND Role
+      // 4. Save Token & Role
       localStorage.setItem("token", data.token);
-
-      // We manually set the role here because we know this is the Client Login page
-      // Even if the backend sends it, forcing it ensures the frontend routing works.
       localStorage.setItem("role", "patient");
 
-      // 3. Success Feedback
       toast.success("Giriş başarılı! Yönlendiriliyorsunuz...");
 
-      // 4. Redirect to Client Dashboard
       setTimeout(() => {
-        // NOTE: Make sure this route matches your App.tsx (e.g., /dashboard or /dashboard/client)
         navigate("/dashboard/client");
       }, 500);
     } catch (error: any) {
       console.error(error);
-      toast.error(
-        error.message || "Giriş başarısız. Bilgilerinizi kontrol edin."
-      );
+      // Axios stores backend error message in error.response.data
+      const errorMessage = error.response?.data?.msg || "Giriş başarısız.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

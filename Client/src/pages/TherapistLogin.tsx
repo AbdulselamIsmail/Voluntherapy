@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Mail, Lock, ArrowLeft, Eye, EyeOff, Users } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api"; // <--- 1. IMPORT THIS
 
 const TherapistLogin = () => {
   const navigate = useNavigate();
@@ -20,41 +21,34 @@ const TherapistLogin = () => {
     setIsLoading(true);
 
     try {
-      // 1. Send Login Request using fetch
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // 2. Use 'api.post' instead of 'fetch'
+      // This ensures requests go to your Render Backend
+      const response = await api.post("/auth/login", { email, password });
 
-      const data = await res.json();
+      // 3. Get data from Axios response
+      const data = response.data;
 
-      if (!res.ok) {
-        throw new Error(data.msg || "Giriş başarısız oldu.");
-      }
-
-      // 2. Security Check: Is this user actually a Doctor?
-      // Note: This relies on your backend sending { token: "...", role: "doctor" }
-      // If your backend doesn't send 'role', remove the 'if' check below.
+      // 4. Security Check: Is this user actually a Doctor?
       if (data.role && data.role !== "doctor") {
         throw new Error("Bu panel sadece terapistler içindir.");
       }
 
-      // 3. Save Token AND Role
+      // 5. Save Token & Role
       localStorage.setItem("token", data.token);
-
-      // Explicitly save the role as 'doctor' so the Navbar knows where to link
       localStorage.setItem("role", "doctor");
 
       toast.success("Giriş başarılı! Yönlendiriliyorsunuz...");
 
-      // 4. Redirect to Therapist Dashboard
+      // 6. Redirect to Therapist Dashboard
       setTimeout(() => {
         navigate("/dashboard/therapist");
       }, 500);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || "Giriş başarısız.");
+      // Handle Axios error message
+      const errorMessage =
+        error.response?.data?.msg || error.message || "Giriş başarısız.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
