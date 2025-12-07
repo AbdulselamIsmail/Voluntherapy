@@ -22,25 +22,31 @@ const ClientLogin = () => {
 
     try {
       // 2. Use 'api.post' instead of 'fetch'
-      // This automatically uses the correct Render Backend URL
+      // This automatically uses the VITE_API_URL defined in api.js
       const response = await api.post("/auth/login", { email, password });
 
-      // 3. Get data from response (Axios puts body in .data)
+      // 3. Get data (Axios puts the response body in .data)
       const data = response.data;
 
-      // 4. Save Token & Role
+      // 4. Save Token AND Role
       localStorage.setItem("token", data.token);
+
+      // Force role to 'patient' for client login to ensure correct routing
       localStorage.setItem("role", "patient");
 
+      // 5. Success Feedback
       toast.success("Giriş başarılı! Yönlendiriliyorsunuz...");
 
+      // 6. Redirect to Client Dashboard
       setTimeout(() => {
         navigate("/dashboard/client");
       }, 500);
     } catch (error: any) {
       console.error(error);
-      // Axios stores backend error message in error.response.data
-      const errorMessage = error.response?.data?.msg || "Giriş başarısız.";
+      // Handle Axios error message (error.response.data.msg is where backend sends errors)
+      const errorMessage =
+        error.response?.data?.msg ||
+        "Giriş başarısız. Bilgilerinizi kontrol edin.";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
