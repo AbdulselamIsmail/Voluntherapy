@@ -23,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// NOTE: api is not imported, but its functionality is included below via fetch
 
 // Define Types for our Data
 interface Therapist {
@@ -45,6 +44,7 @@ interface Appointment {
     name: string;
     email: string;
   };
+  meetingLink?: string; // 👈 Assumed field needed for the video link
 }
 
 const TherapistDashboard = () => {
@@ -53,17 +53,19 @@ const TherapistDashboard = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- FETCH REAL DATA ---
+  // --- FETCH REAL DATA (Absolute URL Fix applied) ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        // 1. Get Token
+        // 1. Get Token and Base URL
         const token = localStorage.getItem("token");
+        const BASE_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:5000"; // 👈 URL FIX APPLIED
+
         if (!token) {
           console.error("No token found");
-          // Navigate to login if needed
           return;
         }
 
@@ -73,21 +75,14 @@ const TherapistDashboard = () => {
           token: token,
         };
 
-        // 3. Determine Base URL (The Fix for Deployment)
-        // This relies on VITE_API_URL being set in Render
-        const BASE_URL =
-          import.meta.env.VITE_API_URL || "http://localhost:5000";
-
-        // 4. Fetch Doctor Profile & Slots
-        // We prepend the absolute BASE_URL to the relative paths
+        // 3. Fetch Doctor Profile & Slots with ABSOLUTE URLS
         const [userRes, slotsRes] = await Promise.all([
-          fetch(`${BASE_URL}/api/doctor/me`, { headers }),
-          fetch(`${BASE_URL}/api/doctor/my-slots`, { headers }),
+          fetch(`${BASE_URL}/api/doctor/me`, { headers }), // 👈 FIX
+          fetch(`${BASE_URL}/api/doctor/my-slots`, { headers }), // 👈 FIX
         ]);
 
         if (userRes.status === 401 || slotsRes.status === 401) {
           localStorage.removeItem("token");
-          // window.location.href = "/login"; // Use navigate if possible, or force reload
           window.location.reload();
           return;
         }
@@ -112,8 +107,6 @@ const TherapistDashboard = () => {
   }, []);
 
   // --- FILTERING LOGIC ---
-  // Only show appointments that are BOOKED (waiting for the doctor)
-  // We filter out 'available' (empty slots) and 'completed' (past history) for the main list
   const incomingAppointments = appointments.filter(
     (apt) => apt.status === "booked" && apt.patientId
   );
@@ -141,6 +134,41 @@ const TherapistDashboard = () => {
         minute: "2-digit",
       }),
     };
+  };
+
+  // --- GET STATUS BADGE ---
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "booked": // Changed from confirmed to booked as per filtering logic
+        return (
+          <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 border-emerald-200">
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Randevu Alındı
+          </Badge>
+        );
+      case "available":
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-amber-500/15 text-amber-700 border-amber-200"
+          >
+            <AlertCircle className="mr-1 h-3 w-3" />
+            Müsait
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge
+            variant="destructive"
+            className="bg-gray-500/15 text-gray-700 border-gray-200"
+          >
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Tamamlandı
+          </Badge>
+        );
+      default:
+        return null;
+    }
   };
 
   if (isLoading) {
@@ -301,6 +329,9 @@ const TherapistDashboard = () => {
                 {incomingAppointments.length > 0 ? (
                   incomingAppointments.map((appointment) => {
                     const { date, time } = formatDateTime(appointment.date);
+                    // Check if meetingLink exists
+                    const hasMeetingLink = !!appointment.meetingLink;
+
                     return (
                       <div
                         key={appointment._id}
@@ -328,13 +359,36 @@ const TherapistDashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          {/* Since status is 'booked', we show Start Call button directly */}
-                          <Button variant="therapeutic" size="sm" asChild>
-                            <Link to={`/video-call/${appointment._id}`}>
-                              <Video className="mr-1 h-4 w-4" />
-                              Görüşmeye Başla
-                            </Link>
-                          </Button>
+                          {/* 👈 VIDEO CONFERENCE BUTTON FIX */}
+                          {hasMeetingLink && (
+                            <Button
+                              variant="therapeutic"
+                              size="sm"
+                              asChild
+                              className="whitespace-nowrap"
+                            >
+                              <a
+                                href={appointment.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center" // <-- Ensure content is centered
+                              >
+                                <Video className="mr-1 h-4 w-4" />
+                                Görüşmeye Başla
+                              </a>
+                            </Button>
+                          )}
+                          {!hasMeetingLink && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled
+                              className="whitespace-nowrap"
+                            >
+                              Link Bekleniyor
+                            </Button>
+                          )}
+                          {/* END VIDEO CONFERENCE BUTTON FIX */}
                         </div>
                       </div>
                     );
