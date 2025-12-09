@@ -119,7 +119,4 @@ The production application is set up using a **Two-Service Architecture** on Ren
 * **Secrets:** The `JWT_SECRET` and `MONGO_URI` are stored securely as **Environment Variables** on the Render dashboard and are never committed to the GitHub repository.
 
 ---
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [Issues page](link-to-your-issues-page).
+This project is created for educational and voluntary purposes. Unauthorized copying, distribution, or commercial use is prohibited without explicit permission from the original authors.
